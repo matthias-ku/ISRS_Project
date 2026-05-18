@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<body>
+    <p><a href="{% url 'index' %}">New search</a></p>
+
+    {% if movie.poster_path %}
+    <img src="https://image.tmdb.org/t/p/w200{{movie.poster_path}}" width="200">
+    {% endif %}
+
+    <h1>{{movie.title}}{% if movie.release_year %} ({{movie.release_year}}){% endif %}</h1>
+
+    <p>
+        {% for genre in movie.genres.all %}{{genre.name}} {% endfor %}
+        {% if movie.runtime %} | {{movie.runtime}} min{% endif %}
+        {% if movie.avg_rating %} | {{movie.avg_rating|floatformat:1}}{% endif %}
+    </p>
+
+    {% if movie.overview %}<p>{{movie.overview}}</p>{% endif %}
+
+    <h2>Recommendations</h2>
+    {% if recommendations %}
+    <ul>
+        {% for rec in recommendations %}
+        <li>
+            {% if rec.poster_path %}
+            <img src="https://image.tmdb.org/t/p/w92{{rec.poster_path}}" width="80">
+            {% endif %}
+            <a href="{% url 'movie-detail' pk=rec.movielens_id %}">{{rec.title}}{% if rec.release_year %} ({{rec.release_year}}){% endif %}</a>
+            {% for genre in rec.genres.all %}{{genre.name}} {% endfor %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No recommendations found.</p>
+    {% endif %}
+</body>
