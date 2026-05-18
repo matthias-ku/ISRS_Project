@@ -1,4 +1,4 @@
-
+Recommender_Systems_Assignment_07 Project.pdf
 # ── Virtual Environment ───────────────────────────────────────────────────────
 venv/
 .venv/
@@ -45,3 +45,6 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+
+# Data
+movie_rec/extracted_content_ml-latest/
