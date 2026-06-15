@@ -3,8 +3,8 @@
     <h1>Movie Recommender</h1>
     <form method="post">
         {% csrf_token %}
-        <label for="movie_id">Movie ID:</label>
-        <input type="number" id="movie_id" name="movie_id" min="1" required>
+        <label for="query">Movie ID or title:</label>
+        <input type="text" id="query" name="query" required>
         <button type="submit">Recommend</button>
     </form>
     {% if error %}<p>{{error}}</p>{% endif %}

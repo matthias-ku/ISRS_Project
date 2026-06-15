@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from recommender.models import Genre, Keyword, Movie, MovieCast, Person
+from recommender.models import Genre, Keyword, Movie, MovieCast, MovieCrew, Person
 
 
 class Command(BaseCommand):
@@ -97,8 +97,7 @@ def import_movie(movielens_id, data):
     # Keywords
     keywords = []
     for kw in tmdb.get("keywords") or []:
-        obj, _ = Keyword.objects.get_or_create(name=kw["name"], defaults={"tmdb_id": kw.get("id")})
-        keywords.append(obj)
+        keywords.append(get_or_create_keyword(kw))
     movie.keywords.set(keywords)
 
     # Directors
@@ -113,6 +112,38 @@ def import_movie(movielens_id, data):
         MovieCast(movie=movie, person=get_or_create_person(entry), character=entry.get("character"), order=entry.get("order"))
         for entry in cast_entries
     ])
+
+    # Crew (directors, writers, production, music, etc.)
+    MovieCrew.objects.filter(movie=movie).delete()
+    crew_rows = []
+    seen = set()
+    for entry in (tmdb.get("credits") or {}).get("crew") or []:
+        person = get_or_create_person(entry)
+        key = (person.pk, entry.get("department"), entry.get("job"))
+        if key in seen:
+            continue
+        seen.add(key)
+        crew_rows.append(
+            MovieCrew(movie=movie, person=person, department=entry.get("department"), job=entry.get("job"))
+        )
+    MovieCrew.objects.bulk_create(crew_rows)
+
+
+def get_or_create_keyword(kw):
+    # Both name and tmdb_id are unique, so match an existing row
+    tmdb_id = kw.get("id")
+    name = (kw.get("name") or "").strip()
+
+    if tmdb_id:
+        obj = Keyword.objects.filter(tmdb_id=tmdb_id).first()
+        if obj:
+            return obj
+
+    obj = Keyword.objects.filter(name=name).first()
+    if obj:
+        return obj
+
+    return Keyword.objects.create(name=name, tmdb_id=tmdb_id or None)
 
 
 def get_or_create_person(entry):

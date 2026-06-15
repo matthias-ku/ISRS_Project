@@ -64,6 +64,7 @@ class Movie(models.Model):
     keywords = models.ManyToManyField(Keyword, blank=True)
     directors = models.ManyToManyField(Person, related_name='directed', blank=True)
     cast = models.ManyToManyField(Person, through='MovieCast', related_name='acted_in', blank=True)
+    crew = models.ManyToManyField(Person, through='MovieCrew', related_name='crewed_in', blank=True)
 
     def get_overview_vector(self):
         #Computes and persists the vector on first call if not yet stored
@@ -93,3 +94,16 @@ class MovieCast(models.Model):
 
     class Meta:
         ordering = ['order']
+
+
+class MovieCrew(models.Model):
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
+    person = models.ForeignKey(Person, on_delete=models.CASCADE)
+    department = models.CharField(max_length=100, null=True, blank=True)
+    job = models.CharField(max_length=255, null=True, blank=True)
+
+    class Meta:
+        ordering = ['department', 'job']
+
+    def __str__(self):
+        return f"{self.person.name} - {self.job}"
