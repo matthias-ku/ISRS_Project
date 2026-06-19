@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Recommendation systems project{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="{% static 'recommender/css/style.css' %}">
+</head>
+<body>
+
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a href="{% url 'index' %}" class="logo">
+                <span class="logo-main">Recommendation Systems</span>
+                <span class="logo-sub">Project &middot; Film Engine</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <div class="site-footer-inner">
+            <span class="footer-mark">RSP</span>
+            <p>Built on five custom recommendation algorithms developed for this project.</p>
+        </div>
+    </footer>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

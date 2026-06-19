@@ -1,35 +1,170 @@
-<!DOCTYPE html>
-<body>
-    <p><a href="{% url 'index' %}">New search</a></p>
+{% extends "recommender/base.html" %}
+{% block title %}{{ movie.title }} &middot; Recommendation systems project{% endblock %}
 
-    {% if movie.poster_path %}
-    <img src="https://image.tmdb.org/t/p/w200{{movie.poster_path}}" width="200">
-    {% endif %}
+{% block content %}
+    <a href="{% url 'index' %}" class="back-link">&larr; New search</a>
 
-    <h1>{{movie.title}}{% if movie.release_year %} ({{movie.release_year}}){% endif %}</h1>
+    <div class="movie-detail">
+        {% if movie.poster_path %}
+        <img class="movie-poster" src="https://image.tmdb.org/t/p/w342{{ movie.poster_path }}" alt="{{ movie.title }} poster">
+        {% endif %}
 
-    <p>
-        {% for genre in movie.genres.all %}{{genre.name}} {% endfor %}
-        {% if movie.runtime %} | {{movie.runtime}} min{% endif %}
-        {% if movie.avg_rating %} | {{movie.avg_rating|floatformat:1}}{% endif %}
+        <div class="movie-info">
+            <p class="movie-eyebrow">Now showing</p>
+
+            <h1>{{ movie.title }}{% if movie.release_year %} <span class="movie-year">({{ movie.release_year }})</span>{% endif %}</h1>
+
+            <div class="movie-meta">
+                {% for genre in movie.genres.all %}<span class="badge">{{ genre.name }}</span>{% endfor %}
+                {% if movie.runtime %}<span class="meta-item">{{ movie.runtime }} min</span>{% endif %}
+                {% if movie.avg_rating %}<span class="meta-item rating">&#9733; {{ movie.avg_rating|floatformat:1 }}</span>{% endif %}
+            </div>
+
+            {% if movie.overview %}<p class="movie-overview">{{ movie.overview }}</p>{% endif %}
+        </div>
+    </div>
+
+    <div class="section-heading">
+        <div>
+            <h2>Recommendations</h2>
+            <p class="section-caption">Switch between recommendation engines</p>
+        </div>
+    </div>
+
+    {% if recommendations %}
+    <div class="engine-tabs" role="tablist" aria-label="Recommendation engines">
+        <button class="engine-tab is-active" type="button" data-engine="baseline">Baseline</button>
+        <button class="engine-tab" type="button" data-engine="story">Story</button>
+        <button class="engine-tab" type="button" data-engine="people">People</button>
+        <button class="engine-tab" type="button" data-engine="production">Production</button>
+        <button class="engine-tab" type="button" data-engine="franchise">Franchise</button>
+        <button class="engine-tab" type="button" data-engine="keywords">Keywords</button>
+    </div>
+
+    <p class="engine-description" id="engine-description">
+        Hybrid engine combines several signals to produce the most balanced recommendations.
     </p>
 
-    {% if movie.overview %}<p>{{movie.overview}}</p>{% endif %}
+    <div class="engine-panel is-active" data-engine-panel="baseline">
+        <div class="movie-grid">
+            {% for rec in recommendations %}
+                <a href="{% url 'movie-detail' pk=rec.movielens_id %}" class="movie-card">
+                    {% if rec.poster_path %}
+                        <img src="https://image.tmdb.org/t/p/w185{{ rec.poster_path }}" alt="{{ rec.title }} poster">
+                    {% else %}
+                        <div class="poster-placeholder"></div>
+                    {% endif %}
 
-    <h2>Recommendations</h2>
-    {% if recommendations %}
-    <ul>
-        {% for rec in recommendations %}
-        <li>
-            {% if rec.poster_path %}
-            <img src="https://image.tmdb.org/t/p/w92{{rec.poster_path}}" width="80">
-            {% endif %}
-            <a href="{% url 'movie-detail' pk=rec.movielens_id %}">{{rec.title}}{% if rec.release_year %} ({{rec.release_year}}){% endif %}</a>
-            {% for genre in rec.genres.all %}{{genre.name}} {% endfor %}
-        </li>
-        {% endfor %}
-    </ul>
+                    {% if rec.avg_rating %}
+                        <span class="movie-card-rating">&#9733; {{ rec.avg_rating|floatformat:1 }}</span>
+                    {% endif %}
+
+                    <div class="movie-card-body">
+                        <p class="movie-card-title">{{ rec.title }}{% if rec.release_year %} ({{ rec.release_year }}){% endif %}</p>
+                        <p class="movie-card-genres">
+                            {% for genre in rec.genres.all %}{{ genre.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                        </p>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="engine-panel" data-engine-panel="story">
+        <div class="empty-state">
+            <p class="empty-state-title">Story Engine</p>
+            <p>
+                This engine recommends movies with a similar story, atmosphere and narrative theme.
+                It uses movie descriptions processed with NLP techniques, supported by genre similarity
+                to capture films that feel alike even when they do not belong to exactly the same genre.
+            </p>
+        </div>
+    </div>
+
+    <div class="engine-panel" data-engine-panel="people">
+        <div class="empty-state">
+            <p class="empty-state-title">People Engine</p>
+            <p>
+                This engine focuses on people behind and in front of the camera. It compares directors,
+                actors and selected crew members using Jaccard similarity, assuming that similar creative
+                teams often produce movies with a similar style, tone or audience appeal.
+            </p>
+        </div>
+    </div>
+
+    <div class="engine-panel" data-engine-panel="production">
+        <div class="empty-state">
+            <p class="empty-state-title">Production Engine</p>
+            <p>
+                This engine compares production-related features such as budget, production companies,
+                countries and original language. Budget has an important role, while country and language
+                are treated as weaker signals, helping to find movies with a similar production scale and context.
+            </p>
+        </div>
+    </div>
+
+    <div class="engine-panel" data-engine-panel="franchise">
+        <div class="empty-state">
+            <p class="empty-state-title">Franchise Engine</p>
+            <p>
+                This engine looks for connections through characters, release era and genre. It is designed
+                to recognize movies from the same franchise or with recurring characters, while also preferring
+                films from a similar time period and stylistic category.
+            </p>
+        </div>
+    </div>
+
+    <div class="engine-panel" data-engine-panel="keywords">
+        <div class="empty-state">
+            <p class="empty-state-title">Keyword Engine</p>
+            <p>
+                This engine compares movie keywords and genres to identify shared topics, motifs and story
+                elements. When keyword data is limited, genre similarity and information extracted from the
+                description can be used as fallback signals.
+            </p>
+        </div>
+    </div>
+
     {% else %}
-    <p>No recommendations found.</p>
+    <div class="empty-state">
+        <p class="empty-state-title">No recommendations yet</p>
+        <p>We couldn't find a match for this title. <a href="{% url 'index' %}" style="color: var(--curtain); text-decoration: underline;">Try another search</a>.</p>
+    </div>
     {% endif %}
-</body>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const tabs = document.querySelectorAll(".engine-tab");
+    const panels = document.querySelectorAll(".engine-panel");
+    const description = document.getElementById("engine-description");
+
+    const descriptions = {
+        story: "Story Engine uses description similarity, NLP features and genres to find movies with a similar narrative or theme.",
+        people: "People Engine uses Jaccard similarity over directors, actors and crew members to recommend movies created by similar teams.",
+        production: "Production Engine compares budget, production companies, countries and languages to find movies with a similar production profile.",
+        franchise: "Franchise Engine focuses on characters, release era and genres to recommend movies from similar series, periods or styles.",
+        keywords: "Keyword Engine compares keywords and genres, with fallback signals when keyword data is limited."
+    };
+
+    tabs.forEach(function (tab) {
+        tab.addEventListener("click", function () {
+            const engine = tab.dataset.engine;
+
+            tabs.forEach(function (item) {
+                item.classList.toggle("is-active", item === tab);
+            });
+
+            panels.forEach(function (panel) {
+                panel.classList.toggle("is-active", panel.dataset.enginePanel === engine);
+            });
+
+            if (description) {
+                description.textContent = descriptions[engine];
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}
