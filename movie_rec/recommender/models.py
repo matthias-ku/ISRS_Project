@@ -48,6 +48,13 @@ class Person(models.Model):
         return self.name
 
 
+class Character(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
 class Movie(models.Model):
     movielens_id = models.IntegerField(primary_key=True)
     tmdb_id = models.IntegerField(null=True, blank=True, db_index=True)
@@ -76,6 +83,7 @@ class Movie(models.Model):
     companies = models.ManyToManyField(Company, blank=True)
     production_countries = models.ManyToManyField(Country, blank=True)
     keywords = models.ManyToManyField(Keyword, blank=True)
+    characters = models.ManyToManyField(Character, related_name='movies', blank=True)
     directors = models.ManyToManyField(Person, related_name='directed', blank=True)
     cast = models.ManyToManyField(Person, through='MovieCast', related_name='acted_in', blank=True)
     crew = models.ManyToManyField(Person, through='MovieCrew', related_name='crewed_in', blank=True)
@@ -103,7 +111,7 @@ class Movie(models.Model):
 class MovieCast(models.Model):
     movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
     person = models.ForeignKey(Person, on_delete=models.CASCADE)
-    character = models.CharField(max_length=255, null=True, blank=True)
+    character = models.ForeignKey(Character, on_delete=models.SET_NULL, null=True, blank=True)
     order = models.IntegerField(null=True, blank=True)
 
     class Meta:

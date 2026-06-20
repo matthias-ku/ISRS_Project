@@ -31,9 +31,9 @@
         </div>
     </div>
 
-    {% if baseline_recommendations %}
+    {% if recommendations %}
     <div class="engine-tabs" role="tablist" aria-label="Recommendation engines">
-        <button class="engine-tab is-active" type="button" data-engine="baseline">Baseline</button>
+        <button class="engine-tab is-active" type="button" data-engine="characters">Characters</button>
         <button class="engine-tab" type="button" data-engine="story">Story</button>
         <button class="engine-tab" type="button" data-engine="people">People</button>
         <button class="engine-tab" type="button" data-engine="production">Production</button>
@@ -42,12 +42,12 @@
     </div>
 
     <p class="engine-description" id="engine-description">
-        Hybrid engine combines several signals to produce the most balanced recommendations.
+        Recommendations based on similar characters, genre and release year.
     </p>
 
-    <div class="engine-panel is-active" data-engine-panel="baseline">
+    <div class="engine-panel is-active" data-engine-panel="characters">
         <div class="movie-grid">
-            {% for rec in baseline_recommendations %}
+            {% for rec in recommendations %}
                 <a href="{% url 'movie-detail' pk=rec.movielens_id %}" class="movie-card">
                     {% if rec.poster_path %}
                         <img src="https://image.tmdb.org/t/p/w185{{ rec.poster_path }}" alt="{{ rec.title }} poster">
@@ -71,6 +71,30 @@
     </div>
 
     <div class="engine-panel" data-engine-panel="story">
+        {% if story_recommendations %}
+        <div class="movie-grid">
+            {% for rec in story_recommendations %}
+                <a href="{% url 'movie-detail' pk=rec.movielens_id %}" class="movie-card">
+                    {% if rec.poster_path %}
+                        <img src="https://image.tmdb.org/t/p/w185{{ rec.poster_path }}" alt="{{ rec.title }} poster">
+                    {% else %}
+                        <div class="poster-placeholder"></div>
+                    {% endif %}
+
+                    {% if rec.avg_rating %}
+                        <span class="movie-card-rating">&#9733; {{ rec.avg_rating|floatformat:1 }}</span>
+                    {% endif %}
+
+                    <div class="movie-card-body">
+                        <p class="movie-card-title">{{ rec.title }}{% if rec.release_year %} ({{ rec.release_year }}){% endif %}</p>
+                        <p class="movie-card-genres">
+                            {% for genre in rec.genres.all %}{{ genre.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                        </p>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+        {% else %}
         <div class="empty-state">
             <p class="empty-state-title">Story Engine</p>
             <p>
@@ -79,6 +103,7 @@
                 to capture films that feel alike even when they do not belong to exactly the same genre.
             </p>
         </div>
+        {% endif %}
     </div>
 
     <div class="engine-panel" data-engine-panel="people">
@@ -160,7 +185,7 @@
         <div class="empty-state">
             <p class="empty-state-title">Keyword Engine</p>
             <p>
-                This engine compares movie keywords and genres to identify shared topics, motifs and story
+                This engine compares movie keywords and genres to identify shared topics, motifs and movie-detail_async
                 elements. When keyword data is limited, genre similarity and information extracted from the
                 description can be used as fallback signals.
             </p>

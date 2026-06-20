@@ -86,6 +86,24 @@ DATABASES = {
 }
 
 
+# Cache
+# https://docs.djangoproject.com/en/6.0/topics/cache/
+# Stores precomputed recommendation results. `ignore_exc` keeps the site working
+# (cache simply misses) if the memcached server is not running.
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.PyMemcacheCache',
+        'LOCATION': os.environ.get('MEMCACHED_LOCATION', '127.0.0.1:11211'),
+        'TIMEOUT': None,  # recommendations are stable until the next data import
+        'OPTIONS': {
+            'no_delay': True,
+            'ignore_exc': True,
+        },
+    }
+}
+
+
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 

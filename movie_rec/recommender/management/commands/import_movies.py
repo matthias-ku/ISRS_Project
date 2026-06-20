@@ -3,7 +3,8 @@ import os
 from datetime import datetime
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from recommender.models import Genre, Keyword, Movie, MovieCast, MovieCrew, Person, Company, Country
+from recommender.models import Character, Genre, Keyword, Movie, MovieCast, MovieCrew, Person, Company, Country
+from recommender.recommender_characters import clean_character_name
 
 
 class Command(BaseCommand):
@@ -108,10 +109,17 @@ def import_movie(movielens_id, data):
     # Cast
     MovieCast.objects.filter(movie=movie).delete()
     cast_entries = sorted((tmdb.get("credits") or {}).get("cast") or [], key=lambda c: c.get("order", 999))[:10]
-    MovieCast.objects.bulk_create([
-        MovieCast(movie=movie, person=get_or_create_person(entry), character=entry.get("character"), order=entry.get("order"))
-        for entry in cast_entries
-    ])
+    cast_rows = []
+    movie_characters = []
+    for entry in cast_entries:
+        character = get_or_create_character(entry.get("character"))
+        if character:
+            movie_characters.append(character)
+        cast_rows.append(
+            MovieCast(movie=movie, person=get_or_create_person(entry), character=character, order=entry.get("order"))
+        )
+    MovieCast.objects.bulk_create(cast_rows)
+    movie.characters.set(movie_characters)
 
     # Companies
     companies_id = [c["id"] for c in tmdb.get("production_companies") or []]
@@ -154,6 +162,14 @@ def get_or_create_keyword(kw):
         return obj
 
     return Keyword.objects.create(name=name, tmdb_id=tmdb_id or None)
+
+
+def get_or_create_character(raw_name):
+    name = clean_character_name(raw_name)
+    if not name:
+        return None
+    character, _ = Character.objects.get_or_create(name=name)
+    return character
 
 
 def get_or_create_person(entry):

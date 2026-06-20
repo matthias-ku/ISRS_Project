@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor
+
 from django.shortcuts import redirect, render, get_object_or_404
 from django.http import JsonResponse
 
@@ -6,10 +8,12 @@ from .recommender_characters import recommend
 from .recommender_directors import recommend_dir
 from .recommender_budget import recommend_budget
 
+from .recommender_story import recommend as recommend_story
+from django.views.decorators.cache import cache_page
 
 def index(request):
     error = None
-    
+
     if request.method == "POST":
         query = request.POST.get("query", "").strip()
         if not query:
@@ -17,7 +21,7 @@ def index(request):
         elif query.isdigit():
             movie_id = int(query)
             if Movie.objects.filter(pk=movie_id).exists():
-                return redirect("movie-detail", pk=movie_id)
+                return redirect("movie_detail_async", pk=movie_id)
             error = f"No movie found with ID {movie_id}."
         else:
             # Title search: pick the best match by rating/popularity.
@@ -27,12 +31,12 @@ def index(request):
                 .first()
             )
             if match:
-                return redirect("movie-detail", pk=match.movielens_id)
+                return redirect("movie_detail_async", pk=match.movielens_id)
             error = f"No movie found matching '{query}'."
     return render(request, "recommender/index.html", {"error": error})
 
 
-def movie_detail(request, pk):
+def movie_detail_character(request, pk):
     movie = get_object_or_404(
         Movie.objects.prefetch_related(
             "genres",
@@ -43,18 +47,33 @@ def movie_detail(request, pk):
         ),
         pk=pk,
     )
-    debug_print_movie(movie)
-    base_reco = recommend(movie.movielens_id, top_n=5)
-    ppl_reco = recommend_dir(movie.movielens_id, top_n=5)
-    prod_reco = recommend_budget(movie.movielens_id, top_n=5)
+    recommendations = recommend(movie.movielens_id, top_n=5)
     return render(request, "recommender/recommendations.html", {
         "movie": movie,
-        "baseline_recommendations": base_reco,
-        "people_recommendations": ppl_reco,
-        "production_recommendations": prod_reco,
+        "recommendations": recommendations,
     })
 
-def movie_dir_detail(request, pk):
+
+def movie_detail_story(request, pk):
+    movie = get_object_or_404(
+        Movie.objects.prefetch_related(
+            "genres",
+            "keywords",
+            "directors",
+            "moviecast_set__person",
+            "moviecrew_set__person",
+        ),
+        pk=pk,
+    )
+    recommendations = recommend_story(movie.movielens_id, top_n=5)
+    return render(request, "recommender/recommendations.html", {
+        "movie": movie,
+        "recommendations": recommendations,
+    })
+
+
+@cache_page(3600)
+def movie_detail_async(request, pk):  # movie_detail_async
     movie = get_object_or_404(
         Movie.objects.prefetch_related(
             "genres",
@@ -66,11 +85,24 @@ def movie_dir_detail(request, pk):
         pk=pk,
     )
     debug_print_movie(movie)
-    base_reco = recommend(movie.movielens_id, top_n=5)
-    ppl_reco = recommend_dir(movie.movielens_id, top_n=5)
+    # Run all recommendation engines concurrently and collect their results.
+    with ThreadPoolExecutor() as executor:
+        character_future = executor.submit(recommend, movie.movielens_id, top_n=5)
+        story_future = executor.submit(recommend_story, movie.movielens_id, top_n=5)
+        ppl_reco_future = executor.submit(recommend_dir, movie.movielens_id, top_n=5)
+        budget_reco_future = executor.submit(recommend_budget, movie.movielens_id, top_n=5)
+
+        recommendations = character_future.result()
+        story_recommendations = story_future.result()
+        people_recommendations = ppl_reco_future.result()
+        production_recommendations = budget_reco_future.result()
+
     return render(request, "recommender/recommendations.html", {
         "movie": movie,
-        "baseline_recommendations": base_reco,
+        "recommendations": recommendations,
+        "story_recommendations": story_recommendations,
+        "people_recommendations": people_recommendations,
+        "production_recommendations": production_recommendations,
     })
 
 
@@ -88,6 +120,7 @@ def debug_print_movie(movie):
     print(f"genres: {[g.name for g in movie.genres.all()]}")
     print(f"keywords: {[k.name for k in movie.keywords.all()]}")
     print(f"directors: {[d.name for d in movie.directors.all()]}")
+    print(f"characters: {[c for c in movie.characters.all()]}")
 
     print("cast:")
     for mc in movie.moviecast_set.all():
