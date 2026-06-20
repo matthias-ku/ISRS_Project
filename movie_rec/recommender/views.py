@@ -1,4 +1,5 @@
 from django.shortcuts import redirect, render, get_object_or_404
+from django.http import JsonResponse
 
 from .models import Movie
 from .recommender_characters import recommend
@@ -6,6 +7,7 @@ from .recommender_characters import recommend
 
 def index(request):
     error = None
+    
     if request.method == "POST":
         query = request.POST.get("query", "").strip()
         if not query:
@@ -71,3 +73,27 @@ def debug_print_movie(movie):
         print(f"{mc.department} / {mc.job}: {mc.person.name}")
 
     print("------------------------------------------------------------")
+
+def movie_search_suggestions(request):
+    query = request.GET.get("q", "").strip()
+ 
+    if len(query) < 2:
+        return JsonResponse({"results": []})
+ 
+    matches = (
+        Movie.objects
+        .filter(title__icontains=query)
+        .order_by("-popularity")[:20]
+    )
+ 
+    results = [
+        {
+            "id": movie.movielens_id,
+            "title": movie.title,
+            "year": movie.release_year,
+            "poster_path": movie.poster_path,
+        }
+        for movie in matches
+    ]
+ 
+    return JsonResponse({"results": results})

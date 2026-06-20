@@ -1,11 +1,174 @@
-<!DOCTYPE html>
-<body>
-    <h1>Movie Recommender</h1>
-    <form method="post">
-        {% csrf_token %}
-        <label for="query">Movie ID or title:</label>
-        <input type="text" id="query" name="query" required>
-        <button type="submit">Recommend</button>
-    </form>
-    {% if error %}<p>{{error}}</p>{% endif %}
-</body>
+{% extends "recommender/base.html" %}
+{% block title %}Recommendation systems project{% endblock %}
+
+{% block content %}
+    <section class="hero">
+        <p class="hero-eyebrow">Five algorithms &middot; one match</p>
+        <h1>Find your next favorite film</h1>
+        <p class="hero-sub">Tell us a title you already love. We'll run it through five recommendation engines built for this project and surface what to watch next.</p>
+    </section>
+
+    <div class="search-panel">
+        <form method="post" class="search-form" autocomplete="off">
+            {% csrf_token %}
+            <div class="search-box">
+                <label for="query">Movie ID or title</label>
+                <svg class="search-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.6"/>
+                    <line x1="13.6" y1="13.6" x2="18" y2="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+                <input type="text" id="query" name="query" required placeholder="e.g. Star Wars">
+                <div id="suggestions" class="suggestions-panel"></div>
+            </div>
+
+            <button type="submit">Recommend</button>
+        </form>
+
+        {% if error %}<p class="error-message">{{ error }}</p>{% endif %}
+
+        <div class="quick-searches">
+            <span class="quick-searches-label">Try:</span>
+            <button type="button" class="chip" data-title="Inception">Inception</button>
+            <button type="button" class="chip" data-title="Parasite">Parasite</button>
+            <button type="button" class="chip" data-title="Spirited Away">Spirited Away</button>
+            <button type="button" class="chip" data-title="The Dark Knight">The Dark Knight</button>
+        </div>
+    </div>
+
+    <div class="film-divider" aria-hidden="true"></div>
+
+    <div class="steps">
+        <div class="step">
+            <span class="step-index">01</span>
+            <h3>Search a film</h3>
+            <p>Enter a title you already know, by name or ID.</p>
+        </div>
+        <div class="step">
+            <span class="step-index">02</span>
+            <h3>We run five engines</h3>
+            <p>Each algorithm scores films differently — genre, audience, cast, and more.</p>
+        </div>
+        <div class="step">
+            <span class="step-index">03</span>
+            <h3>Get your shortlist</h3>
+            <p>See the combined picks, ranked and ready to watch.</p>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const input = document.getElementById("query");
+    const panel = document.getElementById("suggestions");
+    let activeIndex = -1;
+    let currentResults = [];
+    let debounceTimer = null;
+
+    function closePanel() {
+        panel.innerHTML = "";
+        panel.classList.remove("is-open");
+        activeIndex = -1;
+        currentResults = [];
+    }
+
+    function renderResults(results) {
+        currentResults = results;
+        activeIndex = -1;
+
+        if (!results.length) {
+            closePanel();
+            return;
+        }
+
+        panel.innerHTML = results.map(function (movie, index) {
+            const poster = movie.poster_path
+                ? '<img src="https://image.tmdb.org/t/p/w92' + movie.poster_path + '" alt="">'
+                : '<div class="suggestion-poster-placeholder"></div>';
+            const year = movie.year ? '<span class="suggestion-year">' + movie.year + '</span>' : "";
+
+            return (
+                '<div class="suggestion-item" data-index="' + index + '" data-title="' + movie.title.replace(/"/g, "&quot;") + '">' +
+                    poster +
+                    '<div class="suggestion-text">' +
+                        '<span class="suggestion-title">' + movie.title + '</span>' +
+                        year +
+                    '</div>' +
+                '</div>'
+            );
+        }).join("");
+
+        panel.classList.add("is-open");
+    }
+
+    function fetchSuggestions(query) {
+        fetch("/api/movie-search/?q=" + encodeURIComponent(query))
+            .then(function (response) { return response.json(); })
+            .then(function (data) { renderResults(data.results || []); })
+            .catch(function () { closePanel(); });
+    }
+
+    input.addEventListener("input", function () {
+        const query = input.value.trim();
+        clearTimeout(debounceTimer);
+
+        if (query.length < 2) {
+            closePanel();
+            return;
+        }
+
+        debounceTimer = setTimeout(function () {
+            fetchSuggestions(query);
+        }, 200);
+    });
+
+    panel.addEventListener("click", function (event) {
+        const item = event.target.closest(".suggestion-item");
+        if (!item) return;
+        input.value = item.dataset.title;
+        closePanel();
+    });
+
+    input.addEventListener("keydown", function (event) {
+        const items = panel.querySelectorAll(".suggestion-item");
+        if (!items.length) return;
+
+        if (event.key === "ArrowDown") {
+            event.preventDefault();
+            activeIndex = Math.min(activeIndex + 1, items.length - 1);
+        } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            activeIndex = Math.max(activeIndex - 1, 0);
+        } else if (event.key === "Enter" && activeIndex >= 0) {
+            event.preventDefault();
+            input.value = currentResults[activeIndex].title;
+            closePanel();
+            return;
+        } else if (event.key === "Escape") {
+            closePanel();
+            return;
+        } else {
+            return;
+        }
+
+        items.forEach(function (el, i) {
+            el.classList.toggle("is-active", i === activeIndex);
+        });
+        items[activeIndex].scrollIntoView({ block: "nearest" });
+    });
+
+    document.addEventListener("click", function (event) {
+        if (!event.target.closest(".search-box")) {
+            closePanel();
+        }
+    });
+
+    document.querySelectorAll(".chip").forEach(function (chip) {
+        chip.addEventListener("click", function () {
+            input.value = chip.dataset.title;
+            input.focus();
+        });
+    });
+})();
+</script>
+{% endblock %}
