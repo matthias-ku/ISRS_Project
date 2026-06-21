@@ -82,9 +82,11 @@
         }
 
         panel.innerHTML = results.map(function (movie, index) {
-            const poster = movie.poster_path
-                ? '<img src="https://image.tmdb.org/t/p/w92' + movie.poster_path + '" alt="">'
-                : '<div class="suggestion-poster-placeholder"></div>';
+            const poster = movie.cover_link
+                ? '<img src="' + movie.cover_link + '" alt="" referrerpolicy="no-referrer">'
+                : movie.poster_path
+                    ? '<img src="https://image.tmdb.org/t/p/w92' + movie.poster_path + '" alt="">'
+                    : '<div class="suggestion-poster-placeholder"></div>';
             const year = movie.year ? '<span class="suggestion-year">' + movie.year + '</span>' : "";
 
             return (

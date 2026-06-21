@@ -67,6 +67,7 @@ class Movie(models.Model):
     overview = models.TextField(null=True, blank=True)
     tagline = models.CharField(max_length=500, null=True, blank=True)
     poster_path = models.CharField(max_length=255, null=True, blank=True)
+    cover_link = models.CharField(max_length=500, null=True, blank=True)
     backdrop_path = models.CharField(max_length=255, null=True, blank=True)
     popularity = models.FloatField(null=True, blank=True)
     vote_average = models.FloatField(null=True, blank=True)

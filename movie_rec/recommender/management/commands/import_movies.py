@@ -60,8 +60,15 @@ class Command(BaseCommand):
 def import_movie(movielens_id, data):
     ml = data.get("movielens") or {}
     tmdb = data.get("tmdb") or {}
+    imdb = data.get("imdb") or {}
 
     release_date = parse_date(ml.get("releaseDate") or tmdb.get("release_date"))
+
+    cover_link = imdb.get("coverLink") or None
+    if cover_link:
+        cover_link = cover_link.replace(
+            "http://ia.media-imdb.com", "https://images-na.ssl-images-amazon.com"
+        )
 
     movie, _ = Movie.objects.update_or_create(
         movielens_id=movielens_id,
@@ -76,6 +83,7 @@ def import_movie(movielens_id, data):
             overview=ml.get("plotSummary") or tmdb.get("overview"),
             tagline=tmdb.get("tagline") or None,
             poster_path=ml.get("posterPath") or tmdb.get("poster_path"),
+            cover_link=cover_link,
             backdrop_path=tmdb.get("backdrop_path"),
             popularity=tmdb.get("popularity"),
             vote_average=tmdb.get("vote_average"),

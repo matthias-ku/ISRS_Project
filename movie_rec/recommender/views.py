@@ -150,6 +150,7 @@ def movie_search_suggestions(request):
             "title": movie.title,
             "year": movie.release_year,
             "poster_path": movie.poster_path,
+            "cover_link": movie.cover_link,
         }
         for movie in matches
     ]

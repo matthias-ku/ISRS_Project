@@ -5,7 +5,9 @@
     <a href="{% url 'index' %}" class="back-link">&larr; New search</a>
 
     <div class="movie-detail">
-        {% if movie.poster_path %}
+        {% if movie.cover_link %}
+        <img class="movie-poster" src="{{ movie.cover_link }}" alt="{{ movie.title }} poster" referrerpolicy="no-referrer">
+        {% elif movie.poster_path %}
         <img class="movie-poster" src="https://image.tmdb.org/t/p/w342{{ movie.poster_path }}" alt="{{ movie.title }} poster">
         {% endif %}
 
@@ -49,7 +51,9 @@
         <div class="movie-grid">
             {% for rec in recommendations %}
                 <a href="{% url 'movie-detail' pk=rec.movielens_id %}" class="movie-card">
-                    {% if rec.poster_path %}
+                    {% if rec.cover_link %}
+                        <img src="{{ rec.cover_link }}" alt="{{ rec.title }} poster" referrerpolicy="no-referrer">
+                    {% elif rec.poster_path %}
                         <img src="https://image.tmdb.org/t/p/w185{{ rec.poster_path }}" alt="{{ rec.title }} poster">
                     {% else %}
                         <div class="poster-placeholder"></div>
@@ -75,7 +79,9 @@
         <div class="movie-grid">
             {% for rec in story_recommendations %}
                 <a href="{% url 'movie-detail' pk=rec.movielens_id %}" class="movie-card">
-                    {% if rec.poster_path %}
+                    {% if rec.cover_link %}
+                        <img src="{{ rec.cover_link }}" alt="{{ rec.title }} poster" referrerpolicy="no-referrer">
+                    {% elif rec.poster_path %}
                         <img src="https://image.tmdb.org/t/p/w185{{ rec.poster_path }}" alt="{{ rec.title }} poster">
                     {% else %}
                         <div class="poster-placeholder"></div>
@@ -110,7 +116,9 @@
         <div class="movie-grid">
             {% for rec in people_recommendations %}
                 <a href="{% url 'movie-detail' pk=rec.movielens_id %}" class="movie-card">
-                    {% if rec.poster_path %}
+                    {% if rec.cover_link %}
+                        <img src="{{ rec.cover_link }}" alt="{{ rec.title }} poster" referrerpolicy="no-referrer">
+                    {% elif rec.poster_path %}
                         <img src="https://image.tmdb.org/t/p/w185{{ rec.poster_path }}" alt="{{ rec.title }} poster">
                     {% else %}
                         <div class="poster-placeholder"></div>
@@ -135,7 +143,9 @@
         <div class="movie-grid">
             {% for rec in production_recommendations %}
                 <a href="{% url 'movie-detail' pk=rec.movielens_id %}" class="movie-card">
-                    {% if rec.poster_path %}
+                    {% if rec.cover_link %}
+                        <img src="{{ rec.cover_link }}" alt="{{ rec.title }} poster" referrerpolicy="no-referrer">
+                    {% elif rec.poster_path %}
                         <img src="https://image.tmdb.org/t/p/w185{{ rec.poster_path }}" alt="{{ rec.title }} poster">
                     {% else %}
                         <div class="poster-placeholder"></div>
@@ -160,7 +170,9 @@
         <div class="movie-grid">
             {% for rec in baseline_recommendations %}
                 <a href="{% url 'movie-detail' pk=rec.movielens_id %}" class="movie-card">
-                    {% if rec.poster_path %}
+                    {% if rec.cover_link %}
+                        <img src="{{ rec.cover_link }}" alt="{{ rec.title }} poster" referrerpolicy="no-referrer">
+                    {% elif rec.poster_path %}
                         <img src="https://image.tmdb.org/t/p/w185{{ rec.poster_path }}" alt="{{ rec.title }} poster">
                     {% else %}
                         <div class="poster-placeholder"></div>
