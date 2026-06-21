@@ -21,7 +21,7 @@ def index(request):
         elif query.isdigit():
             movie_id = int(query)
             if Movie.objects.filter(pk=movie_id).exists():
-                return redirect("movie_detail_async", pk=movie_id)
+                return redirect("movie-detail", pk=movie_id)
             error = f"No movie found with ID {movie_id}."
         else:
             # Title search: pick the best match by rating/popularity.
@@ -31,7 +31,7 @@ def index(request):
                 .first()
             )
             if match:
-                return redirect("movie_detail_async", pk=match.movielens_id)
+                return redirect("movie-detail", pk=match.movielens_id)
             error = f"No movie found matching '{query}'."
     return render(request, "recommender/index.html", {"error": error})
 
