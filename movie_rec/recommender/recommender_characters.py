@@ -89,5 +89,7 @@ def recommend(movie_id: int, top_n: int = 5) -> list[Movie]:
 
     scored_movies.sort(key=lambda item: item["score"], reverse=True)
     top_recommendations = scored_movies[:top_n]
-    recommended_movies = [item["movie"] for item in top_recommendations]
+    ids = [item["movie"] for item in top_recommendations]
+    movies = Movie.objects.in_bulk(ids)
+    recommended_movies = [movies[i] for i in ids]
     return recommended_movies

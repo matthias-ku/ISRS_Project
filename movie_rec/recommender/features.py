@@ -1,14 +1,14 @@
 from django.core.cache import cache
 from django.db.models import Prefetch
-
+import pickle
+import os
 from .models import Movie, MovieCast, MovieCrew
 
 FEATURES = None
+FEATURES_FILE = "features.pkl"
 
-def load_all_features():
-    global FEATURES
-    if FEATURES is not None:
-        return FEATURES
+def build_all_features():
+
     movies = Movie.objects.prefetch_related(
         "genres",
         "directors",
@@ -21,22 +21,35 @@ def load_all_features():
             queryset=MovieCrew.objects.select_related("person")
         ),
     )
-    FEATURES = {
+    features = {
         movie.pk: build_features(movie)
         for movie in movies
     }
+    with open(FEATURES_FILE, "wb") as f:
+        pickle.dump(features, f)
+
+def load_all_features():
+    global FEATURES
+    if FEATURES is not None:
+        return FEATURES
+    if not os.path.exists(FEATURES_FILE):
+        raise RuntimeError(
+            "Run: python manage.py build_features"
+        )
+    with open(FEATURES_FILE, "rb") as f:
+        FEATURES = pickle.load(f)
     return FEATURES
 
 def build_features(movie):
     cast = list(movie.moviecast_set.all())
     crew = list(movie.moviecrew_set.all())
     return {
-        "movie": movie,
+        "movie": movie.pk,
         "title": movie.title,
         "genres": {g for g in movie.genres.values_list("id", flat=True)},
         "directors": {d for d in movie.directors.values_list("id", flat=True)},
-        "main_actors": {c.person.id for c in cast[5:]},
-        "secondary_actors": {c.person.id for c in cast[:5]},
+        "main_actors": {c.person.id for c in cast if c.order < 5},
+        "secondary_actors": {c.person.id for c in cast if c.order >= 5},
         "characters_name": {clean_character_name(c.character) for c in cast},
         "crew": {c.person.id for c in crew if c.job != "Original Music Composer"},
         "composer": {c.person.id for c in crew if c.job == "Original Music Composer"},

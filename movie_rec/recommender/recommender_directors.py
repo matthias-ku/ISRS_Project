@@ -29,7 +29,7 @@ def recommend_dir(movie_id: int, top_n: int = 5) -> list[Movie]:
         composer_overlap = len(target_composer & candidate_composer)
 
 
-        total_score = 100.0 * directors_overlap + 80.0 * main_actors_overlap+ 20.0 * actors_overlap + 20.0 * composer_overlap + 30.0 * crew_overlap + 5.0 * genre_score
+        total_score = 100.0 * directors_overlap + 80.0 * main_actors_overlap+ 20.0 * actors_overlap + 30.0 * composer_overlap + 20.0 * crew_overlap + 5.0 * genre_score
         if total_score > 0:
             scored_movies.append({
                     "movie": candidate['movie'],
@@ -43,5 +43,7 @@ def recommend_dir(movie_id: int, top_n: int = 5) -> list[Movie]:
                 })
     scored_movies.sort(key=lambda item: item["score"], reverse=True)
     top_recommendations = scored_movies[:top_n]
-    recommended_movies = [item["movie"] for item in top_recommendations]
+    ids = [item["movie"] for item in top_recommendations]
+    movies = Movie.objects.in_bulk(ids)
+    recommended_movies = [movies[i] for i in ids]
     return recommended_movies

@@ -23,23 +23,23 @@ def recommend_budget(movie_id: int, top_n: int = 5) -> list[Movie]:
         candidate_language = candidate["original_language"]
         candidate_companies = candidate["companies"]
         candidate_countries = candidate["production_countries"]
-        percent = 0
+        budget_score = 0
         language_score = 0
         if target_budget and candidate_budget:
-            percent = calculate_budget_score(target_budget,candidate_budget)
+            budget_score = calculate_budget_score(target_budget,candidate_budget)
         if candidate_language and target_language:
             if candidate_language==target_language:
-                language_score += 20.0
+                language_score += 15.0
         companies_score = len(target_companies & candidate_companies)
         countries_score = len(target_countries & candidate_countries)
         genre_score = len(target_genre_ids & candidate_genre_ids)
-        total_score = percent + language_score + genre_score + companies_score * 30.0 + countries_score * 20.0
+        total_score = budget_score + language_score + genre_score + companies_score * 30.0 + countries_score * 15.0
         if total_score > 0:
             scored_movies.append(
                 {
                     "movie": candidate["movie"],
                     "score": total_score,
-                    "budget_similarity": percent,
+                    "budget_similarity": budget_score,
                     "language": target_language==candidate_language,
                     "genre_score": genre_score,
                     "companies_score": companies_score,
@@ -49,5 +49,7 @@ def recommend_budget(movie_id: int, top_n: int = 5) -> list[Movie]:
 
     scored_movies.sort(key=lambda item: item["score"], reverse=True)
     top_recommendations = scored_movies[:top_n]
-    recommended_movies = [item["movie"] for item in top_recommendations]
+    ids = [item["movie"] for item in top_recommendations]
+    movies = Movie.objects.in_bulk(ids)
+    recommended_movies = [movies[i] for i in ids]
     return recommended_movies
