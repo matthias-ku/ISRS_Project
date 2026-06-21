@@ -1,3 +1,4 @@
+from .features import load_all_features
 from .models import Movie
 
 
@@ -54,20 +55,20 @@ def calculate_genre_score(genre_ids_a: set[int], genre_ids_b: set[int]) -> float
 
 
 def recommend(movie_id: int, top_n: int = 5) -> list[Movie]:
-    target_movie = Movie.objects.prefetch_related("genres", "moviecast_set").get(pk=movie_id)
+    features = load_all_features()
+    target_data = features[movie_id]
+    target_characters = target_data["characters_name"]
+    target_genre_ids = target_data["genres"]
+    target_year = parse_release_year(target_data["release_year"])
 
-    target_characters = get_character_names(target_movie)
-    target_genre_ids = get_genre_ids(target_movie)
-    target_year = parse_release_year(target_movie.release_year)
-
-    candidates = Movie.objects.exclude(pk=movie_id).prefetch_related("genres", "moviecast_set")
+    candidate_features = [features[f] for f in features if f != movie_id]
 
     scored_movies = []
 
-    for candidate in candidates:
-        candidate_characters = get_character_names(candidate)
-        candidate_genre_ids = get_genre_ids(candidate)
-        candidate_year = parse_release_year(candidate.release_year)
+    for candidate in candidate_features:
+        candidate_characters = candidate["characters_name"]
+        candidate_genre_ids = candidate["genres"]
+        candidate_year = parse_release_year(candidate["release_year"])
 
         char_overlap = len(target_characters & candidate_characters)
         year_score = calculate_year_score(target_year, candidate_year)
@@ -78,7 +79,7 @@ def recommend(movie_id: int, top_n: int = 5) -> list[Movie]:
         if total_score > 0:
             scored_movies.append(
                 {
-                    "movie": candidate,
+                    "movie": candidate["movie"],
                     "score": total_score,
                     "char_overlap": char_overlap,
                     "year_score": year_score,
@@ -89,5 +90,4 @@ def recommend(movie_id: int, top_n: int = 5) -> list[Movie]:
     scored_movies.sort(key=lambda item: item["score"], reverse=True)
     top_recommendations = scored_movies[:top_n]
     recommended_movies = [item["movie"] for item in top_recommendations]
-
     return recommended_movies

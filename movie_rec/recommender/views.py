@@ -3,6 +3,8 @@ from django.http import JsonResponse
 
 from .models import Movie
 from .recommender_characters import recommend
+from .recommender_directors import recommend_dir
+from .recommender_budget import recommend_budget
 
 
 def index(request):
@@ -42,10 +44,33 @@ def movie_detail(request, pk):
         pk=pk,
     )
     debug_print_movie(movie)
-    recommendations = recommend(movie.movielens_id, top_n=5)
+    base_reco = recommend(movie.movielens_id, top_n=5)
+    ppl_reco = recommend_dir(movie.movielens_id, top_n=5)
+    prod_reco = recommend_budget(movie.movielens_id, top_n=5)
     return render(request, "recommender/recommendations.html", {
         "movie": movie,
-        "recommendations": recommendations,
+        "baseline_recommendations": base_reco,
+        "people_recommendations": ppl_reco,
+        "production_recommendations": prod_reco,
+    })
+
+def movie_dir_detail(request, pk):
+    movie = get_object_or_404(
+        Movie.objects.prefetch_related(
+            "genres",
+            "keywords",
+            "directors",
+            "moviecast_set__person",
+            "moviecrew_set__person",
+        ),
+        pk=pk,
+    )
+    debug_print_movie(movie)
+    base_reco = recommend(movie.movielens_id, top_n=5)
+    ppl_reco = recommend_dir(movie.movielens_id, top_n=5)
+    return render(request, "recommender/recommendations.html", {
+        "movie": movie,
+        "baseline_recommendations": base_reco,
     })
 
 

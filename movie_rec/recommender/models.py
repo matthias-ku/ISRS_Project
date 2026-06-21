@@ -18,6 +18,18 @@ class Genre(models.Model):
     def __str__(self):
         return self.name
 
+class Company(models.Model):
+    id_company = models.IntegerField(null=True, blank=True, unique=True)
+
+    def __int__(self):
+        return self.id_company
+
+class Country(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
 
 class Keyword(models.Model):
     name = models.CharField(max_length=255, unique=True)
@@ -61,6 +73,8 @@ class Movie(models.Model):
     status = models.CharField(max_length=50, null=True, blank=True)
     overview_vector = models.BinaryField(null=True, blank=True)
     genres = models.ManyToManyField(Genre, blank=True)
+    companies = models.ManyToManyField(Company, blank=True)
+    production_countries = models.ManyToManyField(Country, blank=True)
     keywords = models.ManyToManyField(Keyword, blank=True)
     directors = models.ManyToManyField(Person, related_name='directed', blank=True)
     cast = models.ManyToManyField(Person, through='MovieCast', related_name='acted_in', blank=True)

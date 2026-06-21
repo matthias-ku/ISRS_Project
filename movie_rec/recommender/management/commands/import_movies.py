@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from recommender.models import Genre, Keyword, Movie, MovieCast, MovieCrew, Person
+from recommender.models import Genre, Keyword, Movie, MovieCast, MovieCrew, Person, Company, Country
 
 
 class Command(BaseCommand):
@@ -112,6 +112,16 @@ def import_movie(movielens_id, data):
         MovieCast(movie=movie, person=get_or_create_person(entry), character=entry.get("character"), order=entry.get("order"))
         for entry in cast_entries
     ])
+
+    # Companies
+    companies_id = [c["id"] for c in tmdb.get("production_companies") or []]
+    companies = [Company.objects.get_or_create(id_company=id)[0] for id in companies_id if id]
+    movie.companies.set(companies)
+
+    # Production countries
+    countries_names = [c["name"] for c in tmdb.get("production_countries") or []]
+    countries = [Country.objects.get_or_create(name=name)[0] for name in countries_names if name]
+    movie.production_countries.set(countries)
 
     # Crew (directors, writers, production, music, etc.)
     MovieCrew.objects.filter(movie=movie).delete()

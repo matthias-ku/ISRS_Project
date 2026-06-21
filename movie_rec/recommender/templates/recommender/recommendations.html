@@ -31,7 +31,7 @@
         </div>
     </div>
 
-    {% if recommendations %}
+    {% if baseline_recommendations %}
     <div class="engine-tabs" role="tablist" aria-label="Recommendation engines">
         <button class="engine-tab is-active" type="button" data-engine="baseline">Baseline</button>
         <button class="engine-tab" type="button" data-engine="story">Story</button>
@@ -47,7 +47,7 @@
 
     <div class="engine-panel is-active" data-engine-panel="baseline">
         <div class="movie-grid">
-            {% for rec in recommendations %}
+            {% for rec in baseline_recommendations %}
                 <a href="{% url 'movie-detail' pk=rec.movielens_id %}" class="movie-card">
                     {% if rec.poster_path %}
                         <img src="https://image.tmdb.org/t/p/w185{{ rec.poster_path }}" alt="{{ rec.title }} poster">
@@ -82,35 +82,77 @@
     </div>
 
     <div class="engine-panel" data-engine-panel="people">
-        <div class="empty-state">
-            <p class="empty-state-title">People Engine</p>
-            <p>
-                This engine focuses on people behind and in front of the camera. It compares directors,
-                actors and selected crew members using Jaccard similarity, assuming that similar creative
-                teams often produce movies with a similar style, tone or audience appeal.
-            </p>
+        <div class="movie-grid">
+            {% for rec in people_recommendations %}
+                <a href="{% url 'movie-detail' pk=rec.movielens_id %}" class="movie-card">
+                    {% if rec.poster_path %}
+                        <img src="https://image.tmdb.org/t/p/w185{{ rec.poster_path }}" alt="{{ rec.title }} poster">
+                    {% else %}
+                        <div class="poster-placeholder"></div>
+                    {% endif %}
+
+                    {% if rec.avg_rating %}
+                        <span class="movie-card-rating">&#9733; {{ rec.avg_rating|floatformat:1 }}</span>
+                    {% endif %}
+
+                    <div class="movie-card-body">
+                        <p class="movie-card-title">{{ rec.title }}{% if rec.release_year %} ({{ rec.release_year }}){% endif %}</p>
+                        <p class="movie-card-genres">
+                            {% for genre in rec.genres.all %}{{ genre.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                        </p>
+                    </div>
+                </a>
+            {% endfor %}
         </div>
     </div>
 
     <div class="engine-panel" data-engine-panel="production">
-        <div class="empty-state">
-            <p class="empty-state-title">Production Engine</p>
-            <p>
-                This engine compares production-related features such as budget, production companies,
-                countries and original language. Budget has an important role, while country and language
-                are treated as weaker signals, helping to find movies with a similar production scale and context.
-            </p>
+        <div class="movie-grid">
+            {% for rec in production_recommendations %}
+                <a href="{% url 'movie-detail' pk=rec.movielens_id %}" class="movie-card">
+                    {% if rec.poster_path %}
+                        <img src="https://image.tmdb.org/t/p/w185{{ rec.poster_path }}" alt="{{ rec.title }} poster">
+                    {% else %}
+                        <div class="poster-placeholder"></div>
+                    {% endif %}
+
+                    {% if rec.avg_rating %}
+                        <span class="movie-card-rating">&#9733; {{ rec.avg_rating|floatformat:1 }}</span>
+                    {% endif %}
+
+                    <div class="movie-card-body">
+                        <p class="movie-card-title">{{ rec.title }}{% if rec.release_year %} ({{ rec.release_year }}){% endif %}</p>
+                        <p class="movie-card-genres">
+                            {% for genre in rec.genres.all %}{{ genre.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                        </p>
+                    </div>
+                </a>
+            {% endfor %}
         </div>
     </div>
 
     <div class="engine-panel" data-engine-panel="franchise">
-        <div class="empty-state">
-            <p class="empty-state-title">Franchise Engine</p>
-            <p>
-                This engine looks for connections through characters, release era and genre. It is designed
-                to recognize movies from the same franchise or with recurring characters, while also preferring
-                films from a similar time period and stylistic category.
-            </p>
+        <div class="movie-grid">
+            {% for rec in baseline_recommendations %}
+                <a href="{% url 'movie-detail' pk=rec.movielens_id %}" class="movie-card">
+                    {% if rec.poster_path %}
+                        <img src="https://image.tmdb.org/t/p/w185{{ rec.poster_path }}" alt="{{ rec.title }} poster">
+                    {% else %}
+                        <div class="poster-placeholder"></div>
+                    {% endif %}
+
+                    {% if rec.avg_rating %}
+                        <span class="movie-card-rating">&#9733; {{ rec.avg_rating|floatformat:1 }}</span>
+                    {% endif %}
+
+                    <div class="movie-card-body">
+                        <p class="movie-card-title">{{ rec.title }}{% if rec.release_year %} ({{ rec.release_year }}){% endif %}</p>
+                        <p class="movie-card-genres">
+                            {% for genre in rec.genres.all %}{{ genre.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                        </p>
+                    </div>
+                </a>
+            {% endfor %}
         </div>
     </div>
 
