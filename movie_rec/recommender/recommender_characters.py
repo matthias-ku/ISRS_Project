@@ -1,6 +1,7 @@
 import time
 from collections import defaultdict
 
+from .features import load_all_features
 from .models import Movie
 
 # Global in-memory store of the table to cut down recommend time
@@ -53,12 +54,13 @@ def calculate_genre_score(genre_ids_a: set[int], genre_ids_b: set[int]) -> float
 
 def load_data() -> dict[int, tuple[int | None, set[int], set[int]]]:
     # Build the global store once.
+    """
     global _data
     if _data is not None:
-        return _data
+        return _data"""
 
     start = time.time()
-
+    """
     character_ids = defaultdict(set)
     for movie_id, character_id in Movie.characters.through.objects.values_list("movie_id", "character_id"):
         character_ids[movie_id].add(character_id)
@@ -70,7 +72,14 @@ def load_data() -> dict[int, tuple[int | None, set[int], set[int]]]:
     _data = {
         movie_id: (parse_release_year(year), character_ids.get(movie_id, set()), genre_ids.get(movie_id, set()))
         for movie_id, year in Movie.objects.values_list("movielens_id", "release_year")
+    }"""
+
+    features = load_all_features()
+    _data = {
+        movie_id: (parse_release_year(features[movie_id]["release_year"]),features[movie_id]["characters"],features[movie_id]["genres"])
+        for movie_id in features
     }
+
 
     print(f"Loaded {len(_data)} movies into _data in {time.time() - start:.2f} seconds")
     return _data
@@ -78,18 +87,31 @@ def load_data() -> dict[int, tuple[int | None, set[int], set[int]]]:
 
 def recommend(movie_id: int, top_n: int = 5) -> list[Movie]:
     start = time.time()
-    data = load_data()
+    #data = load_data()
+    features = load_all_features()
 
-    if movie_id not in data:
+    if movie_id not in features:
         return []
+    target_movie = features[movie_id]
+    target_year = parse_release_year(target_movie["release_year"])
+    target_characters = target_movie["characters"]
+    target_genre_ids = target_movie["genres"]
 
-    target_year, target_characters, target_genre_ids = data[movie_id]
+    #target_year, target_characters, target_genre_ids = data[movie_id]
 
     scored_movies = []
+    candidate_features = [features[f] for f in features if f!=movie_id]
 
-    for candidate_id, (candidate_year, candidate_characters, candidate_genre_ids) in data.items():
-        if candidate_id == movie_id:
+    #for candidate_id, (candidate_year, candidate_characters, candidate_genre_ids) in data.items():
+    for candidate in candidate_features:
+
+        #if candidate_id == movie_id:
+        if candidate["movie"] == movie_id:
             continue
+
+        candidate_year = parse_release_year(candidate["release_year"])
+        candidate_characters = candidate["characters"]
+        candidate_genre_ids = candidate["genres"]
 
         char_overlap = len(target_characters & candidate_characters)
         year_score = calculate_year_score(target_year, candidate_year)
@@ -98,7 +120,7 @@ def recommend(movie_id: int, top_n: int = 5) -> list[Movie]:
         total_score = 3.0 * char_overlap + 2.0 * year_score + 1.0 * genre_score
 
         if total_score > 0:
-            scored_movies.append((total_score, candidate_id))
+            scored_movies.append((total_score, candidate["movie"]))
 
     scored_movies.sort(key=lambda item: item[0], reverse=True)
     top_ids = [candidate_id for _, candidate_id in scored_movies[:top_n]]
@@ -106,5 +128,5 @@ def recommend(movie_id: int, top_n: int = 5) -> list[Movie]:
     movies_by_id = Movie.objects.in_bulk(top_ids)
     recommended_movies = [movies_by_id[movieid] for movieid in top_ids if movieid in movies_by_id]
 
-    print(f"Recommend Elapsed: {time.time() - start:.2f} seconds")
+    print(f"Recommend Character Elapsed: {time.time() - start:.2f} seconds")
     return recommended_movies

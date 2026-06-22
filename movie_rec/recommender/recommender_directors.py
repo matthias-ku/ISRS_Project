@@ -1,7 +1,10 @@
+import time
+
 from .features import load_all_features
 from .models import Movie
 
 def recommend_dir(movie_id: int, top_n: int = 5) -> list[Movie]:
+    start = time.time()
     features = load_all_features()
     target_data = features[movie_id]
     target_directors = target_data['directors']
@@ -46,4 +49,5 @@ def recommend_dir(movie_id: int, top_n: int = 5) -> list[Movie]:
     ids = [item["movie"] for item in top_recommendations]
     movies = Movie.objects.in_bulk(ids)
     recommended_movies = [movies[i] for i in ids]
+    print(f"Recommend Director Elapsed: {time.time() - start:.2f} seconds")
     return recommended_movies

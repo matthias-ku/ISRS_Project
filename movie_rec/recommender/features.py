@@ -50,7 +50,7 @@ def build_features(movie):
         "directors": {d for d in movie.directors.values_list("id", flat=True)},
         "main_actors": {c.person.id for c in cast if c.order < 5},
         "secondary_actors": {c.person.id for c in cast if c.order >= 5},
-        "characters_name": {clean_character_name(c.character) for c in cast},
+        "characters": {c.character_id for c in cast if c.character_id is not None},
         "crew": {c.person.id for c in crew if c.job != "Original Music Composer"},
         "composer": {c.person.id for c in crew if c.job == "Original Music Composer"},
         "budget": movie.budget,
@@ -58,6 +58,7 @@ def build_features(movie):
         "release_year": movie.release_year,
         "companies": {c for c in movie.companies.values_list("id", flat=True)},
         "production_countries": {p for p in movie.production_countries.values_list("id", flat=True)},
+        "overview": movie.get_overview_vector(),
     }
 
 def clean_character_name(character: str | None) -> str | None:
