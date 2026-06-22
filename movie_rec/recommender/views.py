@@ -7,6 +7,7 @@ from .models import Movie
 from .recommender_characters import recommend
 from .recommender_directors import recommend_dir
 from .recommender_budget import recommend_budget
+from .recommender_keywords import recommend_keywords
 
 from .recommender_story import recommend as recommend_story
 from django.views.decorators.cache import cache_page
@@ -91,11 +92,13 @@ def movie_detail_async(request, pk):  # movie_detail_async
         story_future = executor.submit(recommend_story, movie.movielens_id, top_n=5)
         ppl_reco_future = executor.submit(recommend_dir, movie.movielens_id, top_n=5)
         budget_reco_future = executor.submit(recommend_budget, movie.movielens_id, top_n=5)
+        keywords_future = executor.submit(recommend_keywords, movie.movielens_id, top_n=5)
 
         recommendations = character_future.result()
         story_recommendations = story_future.result()
         people_recommendations = ppl_reco_future.result()
         production_recommendations = budget_reco_future.result()
+        keywords_recommendations = keywords_future.result()
 
     return render(request, "recommender/recommendations.html", {
         "movie": movie,
@@ -103,6 +106,7 @@ def movie_detail_async(request, pk):  # movie_detail_async
         "story_recommendations": story_recommendations,
         "people_recommendations": people_recommendations,
         "production_recommendations": production_recommendations,
+        "keywords_recommendations": keywords_recommendations,
     })
 
 

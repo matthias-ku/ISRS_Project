@@ -168,6 +168,30 @@
 
 
     <div class="engine-panel" data-engine-panel="keywords">
+        <div class="movie-grid">
+            {% for rec in keywords_recommendations %}
+                <a href="{% url 'movie-detail' pk=rec.movielens_id %}" class="movie-card">
+                    {% if rec.cover_link %}
+                        <img src="{{ rec.cover_link }}" alt="{{ rec.title }} poster" referrerpolicy="no-referrer">
+                    {% elif rec.poster_path %}
+                        <img src="https://image.tmdb.org/t/p/w185{{ rec.poster_path }}" alt="{{ rec.title }} poster">
+                    {% else %}
+                        <div class="poster-placeholder"></div>
+                    {% endif %}
+
+                    {% if rec.avg_rating %}
+                        <span class="movie-card-rating">&#9733; {{ rec.avg_rating|floatformat:1 }}</span>
+                    {% endif %}
+
+                    <div class="movie-card-body">
+                        <p class="movie-card-title">{{ rec.title }}{% if rec.release_year %} ({{ rec.release_year }}){% endif %}</p>
+                        <p class="movie-card-genres">
+                            {% for genre in rec.genres.all %}{{ genre.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                        </p>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
         <div class="empty-state">
             <p class="empty-state-title">Keyword Engine</p>
             <p>
