@@ -119,11 +119,9 @@ def recommend_keywords(movie_id: int, top_n: int = 5) -> list[Movie]:
     target_kw_count = cache["kw_counts"][idx]
 
     if target_kw_count >= 3:
-        total_scores = 0.8 * kw_scores + 0.1 * genre_scores + 0.1 * overview_scores
-    elif target_kw_count > 0:
-        total_scores = 0.4 * kw_scores + 0.3 * genre_scores + 0.3 * overview_scores
+        total_scores = 0.8 * kw_scores + 0.2 * genre_scores
     else:
-        total_scores = 0.4 * genre_scores + 0.6 * overview_scores
+        total_scores = genre_scores
 
     total_scores[idx] = 0.0
 
