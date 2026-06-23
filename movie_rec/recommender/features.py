@@ -7,24 +7,60 @@ from .models import Movie, MovieCast, MovieCrew
 FEATURES = None
 FEATURES_FILE = "features.pkl"
 
-def build_all_features():
+# def build_all_features():
 
-    movies = Movie.objects.prefetch_related(
-        "genres",
-        "directors",
-        Prefetch(
-            "moviecast_set",
-            queryset=MovieCast.objects.select_related("person")
-        ),
-        Prefetch(
-            "moviecrew_set",
-            queryset=MovieCrew.objects.select_related("person")
-        ),
+#     movies = Movie.objects.prefetch_related(
+#         "genres",
+#         "keywords",
+#         "directors",
+#         Prefetch(
+#             "moviecast_set",
+#             queryset=MovieCast.objects.select_related("person")
+#         ),
+#         Prefetch(
+#             "moviecrew_set",
+#             queryset=MovieCrew.objects.select_related("person")
+#         ),
+#     )
+#     features = {
+#         movie.pk: build_features(movie)
+#         for movie in movies
+#     }
+#     with open(FEATURES_FILE, "wb") as f:
+#         pickle.dump(features, f)
+
+def build_all_features(batch_size=500):
+    features = {}
+
+    movie_ids = list(
+        Movie.objects.values_list("pk", flat=True)
     )
-    features = {
-        movie.pk: build_features(movie)
-        for movie in movies
-    }
+
+    total = len(movie_ids)
+
+    for start in range(0, total, batch_size):
+        end = start + batch_size
+        batch_ids = movie_ids[start:end]
+
+        print(f"Building features: {start}/{total}")
+
+        movies = Movie.objects.filter(pk__in=batch_ids).prefetch_related(
+            "genres",
+            "keywords",
+            "directors",
+            Prefetch(
+                "moviecast_set",
+                queryset=MovieCast.objects.select_related("person")
+            ),
+            Prefetch(
+                "moviecrew_set",
+                queryset=MovieCrew.objects.select_related("person")
+            ),
+        )
+
+        for movie in movies:
+            features[movie.pk] = build_features(movie)
+
     with open(FEATURES_FILE, "wb") as f:
         pickle.dump(features, f)
 
@@ -46,6 +82,7 @@ def build_features(movie):
     return {
         "movie": movie.pk,
         "title": movie.title,
+        "keywords": {k for k in movie.keywords.values_list("id", flat=True)},
         "genres": {g for g in movie.genres.values_list("id", flat=True)},
         "directors": {d for d in movie.directors.values_list("id", flat=True)},
         "main_actors": {c.person.id for c in cast if c.order < 5},

@@ -16,7 +16,7 @@ def _build_cache(features):
 
     from scipy.sparse import csr_matrix
 
-    # --- Keyword binary matrix ---
+    # Keyword binary matrix
     all_keywords = set()
     for mid in movie_ids:
         all_keywords.update(features[mid].get("keywords") or [])
@@ -34,7 +34,7 @@ def _build_cache(features):
         shape=(n, len(kw_list))
     )
 
-    # --- Genre binary matrix ---
+    # Genre binary matrix
     all_genres = set()
     for mid in movie_ids:
         all_genres.update(features[mid].get("genres") or [])
@@ -55,7 +55,7 @@ def _build_cache(features):
     kw_counts = np.asarray(kw_matrix.sum(axis=1)).flatten()
     genre_counts = np.asarray(genre_matrix.sum(axis=1)).flatten()
 
-    # --- Overview embedding matrix (same as story recommender) ---
+    # Overview embedding matrix
     overview_vectors = []
     for mid in movie_ids:
         v = features[mid].get("overview")
@@ -70,7 +70,7 @@ def _build_cache(features):
         overview_matrix = np.array([
             v if v is not None else np.zeros(len(vec_dim))
             for v in overview_vectors
-        ])  # shape (n, embedding_dim)
+        ])
     else:
         overview_matrix = None
 
@@ -87,8 +87,7 @@ def _build_cache(features):
 
 
 def _jaccard_row_vs_all(binary_matrix, counts, target_idx):
-    target_row = binary_matrix[target_idx]  # sparse (1, m)
-    # .toarray() converts sparse result to dense before flattening
+    target_row = binary_matrix[target_idx]
     intersection = np.asarray(binary_matrix.dot(target_row.T).toarray()).flatten().astype(float)
     target_count = float(counts[target_idx])
     union = counts + target_count - intersection
@@ -111,16 +110,16 @@ def recommend_keywords(movie_id: int, top_n: int = 5) -> list[Movie]:
     kw_scores = _jaccard_row_vs_all(cache["kw_matrix"], cache["kw_counts"], idx)
     genre_scores = _jaccard_row_vs_all(cache["genre_matrix"], cache["genre_counts"], idx)
 
-    # reuse the precomputed embedding — same as story recommender, no TF-IDF needed
+    # reuse the precomputed embedding — same as story recommender
     if cache["overview_matrix"] is not None:
-        overview_scores = cache["overview_matrix"] @ cache["overview_matrix"][idx]  # (n,)
+        overview_scores = cache["overview_matrix"] @ cache["overview_matrix"][idx]
     else:
         overview_scores = np.zeros(len(movie_ids))
 
     target_kw_count = cache["kw_counts"][idx]
 
     if target_kw_count >= 3:
-        total_scores = 0.7 * kw_scores + 0.2 * genre_scores + 0.1 * overview_scores
+        total_scores = 0.8 * kw_scores + 0.1 * genre_scores + 0.1 * overview_scores
     elif target_kw_count > 0:
         total_scores = 0.4 * kw_scores + 0.3 * genre_scores + 0.3 * overview_scores
     else:
