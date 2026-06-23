@@ -45,10 +45,13 @@ python manage.py import_movies --limit 100
 # 5. (Optional) Create an admin user to browse data at /admin/
 python manage.py createsuperuser
 
-# 6. (Optional) Pre-compute spaCy overview vectors for all movies
+# 6. Pre-compute spaCy overview vectors for all movies
 python manage.py vectorize_overviews
 # recompute already-vectorized movies
 python manage.py vectorize_overviews --recompute
 
-# 7. Start the dev server
+# 7. Pre-compute data dictionary
+python manage.py build_features
+
+# 8. Start the dev server
 python manage.py runserver

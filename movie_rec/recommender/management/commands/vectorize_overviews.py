@@ -54,8 +54,23 @@ class Command(BaseCommand):
         self.stdout.write(f"Vectorized {processed} movies.")
 
 
+def get_filtered_vector(doc, np):
+    # Filter out stopwords
+    relevant_vectors = [
+        token.vector for token in doc if not token.is_stop and not token.is_punct
+    ]
+
+    if not relevant_vectors:
+        return np.zeros(doc.vocab.vectors_length, dtype=np.float32).tobytes()
+
+    average_vector = np.mean(relevant_vectors, axis=0)
+    return average_vector.astype(np.float32).tobytes()
+
+
 def save_vectors(nlp, np, movies, texts):
     for movie, doc in zip(movies, nlp.pipe(texts, batch_size=BATCH_SIZE)):
-        movie.overview_vector = doc.vector.astype(np.float32).tobytes()
+        # movie.overview_vector = doc.vector.astype(np.float32).tobytes()
+        movie.overview_vector = get_filtered_vector(doc, np)
+
     Movie.objects.bulk_update(movies, ["overview_vector"])
     return len(movies)
