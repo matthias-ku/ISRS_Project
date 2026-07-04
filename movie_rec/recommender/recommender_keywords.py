@@ -55,25 +55,6 @@ def _build_cache(features):
     kw_counts = np.asarray(kw_matrix.sum(axis=1)).flatten()
     genre_counts = np.asarray(genre_matrix.sum(axis=1)).flatten()
 
-    # Overview embedding matrix
-    overview_vectors = []
-    for mid in movie_ids:
-        v = features[mid].get("overview")
-        if v is not None and np.linalg.norm(v) > 0:
-            overview_vectors.append(v / np.linalg.norm(v))  # pre-normalize
-        else:
-            overview_vectors.append(np.zeros_like(overview_vectors[0]) if overview_vectors else None)
-
-    # handle case where first movies have no vector
-    vec_dim = next((v for v in overview_vectors if v is not None), None)
-    if vec_dim is not None:
-        overview_matrix = np.array([
-            v if v is not None else np.zeros(len(vec_dim))
-            for v in overview_vectors
-        ])
-    else:
-        overview_matrix = None
-
     _cache = {
         "movie_ids": movie_ids,
         "id_to_index": id_to_index,
@@ -81,7 +62,6 @@ def _build_cache(features):
         "kw_counts": kw_counts,
         "genre_matrix": genre_matrix,
         "genre_counts": genre_counts,
-        "overview_matrix": overview_matrix,
     }
     return _cache
 
@@ -99,6 +79,14 @@ def recommend_keywords(movie_id: int, top_n: int = 5) -> list[Movie]:
     start = time.time()
 
     features = load_all_features()
+
+    print("movie_id:", movie_id)
+    print("features exists:", movie_id in features)
+
+    if movie_id in features:
+        print("feature keywords:", features[movie_id].get("keywords"))
+        print("feature genres:", features[movie_id].get("genres"))
+
     cache = _build_cache(features)
 
     if movie_id not in cache["id_to_index"]:
@@ -110,13 +98,8 @@ def recommend_keywords(movie_id: int, top_n: int = 5) -> list[Movie]:
     kw_scores = _jaccard_row_vs_all(cache["kw_matrix"], cache["kw_counts"], idx)
     genre_scores = _jaccard_row_vs_all(cache["genre_matrix"], cache["genre_counts"], idx)
 
-    # reuse the precomputed embedding — same as story recommender
-    if cache["overview_matrix"] is not None:
-        overview_scores = cache["overview_matrix"] @ cache["overview_matrix"][idx]
-    else:
-        overview_scores = np.zeros(len(movie_ids))
-
     target_kw_count = cache["kw_counts"][idx]
+    print(f"Keyword_count: ", target_kw_count)
 
     if target_kw_count >= 3:
         total_scores = 0.8 * kw_scores + 0.2 * genre_scores
